@@ -1,0 +1,245 @@
+---
+title: "Relationship of total length and age class to melanophore abundance in Macrhybopsis hyostoma"
+author: "Sarah Gaughan"
+date: "Sunday, November 1, 2015"
+output:
+  word_document:
+    fig_caption: yes
+    keep_md: yes
+---
+
+# Introduction
+   The Mississippi River Basin has undergone dramatic ecological changes in the past century as a result of human activity including channelization, formation of dams, removal of natural formations and agricultural discharge [1]. These alterations on habitats include a reduction of water flow and a reduction in nursery habitats which are critical for many species of fish to reproduce [2, 3]. These alterations have also shifted selection pressures on shoal chubs which have resulted in population declines in many of these large regulated rivers [4].
+The shoal chub is a member of the Macrhybopsis genus which are small-bodied fishes that are typically obligate river species and may be susceptible to these anthropogenic disturbances [5]. Shoal chubs serve a valuable ecological niche as a key food chain species during the juvenile and adult stages for the endangered pallid sturgeon [6, 7] .
+Melanophores  regulate pigmentation via melanocyte stimulating hormones and may facilitate camouflage thereby avoiding predation.  The major objective for this project is to determine underlying factors influencing melanophore abundance in shoal chubs including physiological and ecological variables.
+
+
+My primary objectives were to determine if there is some sort of correlation between age and total length and the total number of melanophores, and if any of the collected environmental variables affected the total number of melanophores present.
+
+# Methods
+
+Fish were collected from nine sites along with the Mississippi River Basin . A seine net and a boat trawl will be used to collect fish samples, depending on water depth. I collected  226 shoal chub specimens. Additionally, I collected 56 silver chubs and 15 specimens of sicklefin and sturgeon chub respectively. All specimens were preserved in 100% ethanol.  
+    Environmental data including water velocity, turbidity, and depth was measured with a flow vane, turbidity meter or secchi disk and meter stick respectively. Substrate composition was determined by collecting a substrate sample and measuring particle size. The particles were later in the laboratory according to the Wentworth scale [15]. 
+
+
+I checked the four continuous covariates for evidence of collinearity with pairwise Pearson's correlation coefficients. If two variables had $\vert r \vert \geq 0.75$ I did not include them in the same model. Based on the pairs plot I log transformed total melanophores, number of small melanophores, number of medium melanophores and the number of large melanophores.
+
+```{r loadData, echo=FALSE, warning=FALSE, include=FALSE}
+# You will need a code chunk to load the data and any packages that are required. All of your code chunks should be named. The name is specified as text right after the `r`. This chunk is named `loadData`. These names help with debugging your code and the resulting document. In the Introduction, methods, and results sections you will set the chunk option `echo` to FALSE. This will hide the code. 
+chub <- read.csv("tempdocs/chub.csv")
+SChub_CPUE <- read.csv("C:/Users/Sarah/Desktop/Chub_CPUE.csv")
+#Transform variables
+chub$logTMelan<-log(chub$Total_Melanophores)
+chub$logsmMelan<-log(chub$Small_Melanophores)
+chub$logmdMelan<-log(chub$Medium_Melanophores)
+chub$loglgMelan<-log(chub$Large_Melanophores)
+
+lapply(chub,class)
+lapply(chub,mean,na.rm=TRUE) #problem
+
+chub1=chub[chub$Age_Class==1,]
+chub2=chub[chub$Age_Class==2,]
+
+#Scale variables
+
+
+library(dplyr)
+scaling <- group_by(chub, Age_Class) %>% summarise(mean.TL=mean(TL),sd.TL=sd(TL))
+chub <- full_join(chub,scaling,by="Age_Class")
+chub <- mutate(chub,STL = (TL-mean.TL)/sd.TL)
+Continuous.variables = c("Turbidity", "Current.Velocity..meters.second.","Water_Temp", "Water_Depth")
+chubscaled = scale(chub[,Continuous.variables])
+
+chubmodel=cbind(chub[,c("logTMelan","Total_Melanophores","logsmMelan","logmdMelan","loglgMelan","Substrate_Type","Collection.Location", "Sex","Age_Class","TL","STL")],chubscaled)
+
+
+```
+
+
+```{r Assumptions1, echo=FALSE}
+# have to include the panel.cor and panel.hist functions here if 
+# you don't load them during R startup.
+# I used the fig.cap chunk option to add a caption to my figure.
+# notice that in addition to echo=FALSE I have a chunk option 
+# include=FALSE. That means the code will run and produce output
+# but that output will not be "included" in the document at this point
+# The figures produced will be manually inserted later, in Appendix A. 
+
+panel.cor <- function(x, y, digits=2, prefix="", cex.cor, ...)
+{
+    usr <- par("usr"); on.exit(par(usr))
+    par(usr = c(0, 1, 0, 1))
+    r <- abs(cor(x, y,use="pairwise.complete"))
+    txt <- format(c(r, 0.123456789), digits=digits)[1]
+    txt <- paste(prefix, txt, sep="")
+    if(missing(cex.cor)) cex.cor <- 0.8/strwidth(txt)
+    text(0.5, 0.5, txt, cex = cex.cor * r)
+}
+panel.hist=function(x, ...)
+{
+    usr <- par("usr"); on.exit(par(usr))
+    par(usr = c(usr[1:2], 0, 1.5) )
+    h <- hist(x, plot = FALSE)
+    breaks <- h$breaks; nB <- length(breaks)
+    y <- h$counts; y <- y/max(y)
+    rect(breaks[-nB], 0, breaks[-1], y, col="cyan", ...)
+}
+pairs(chub[,c(7:19)],lower.panel=panel.cor,diag.panel=panel.hist)
+
+chub$Age_Class<-factor(chub$Age_Class)
+
+boxplot(logTMelan~ TL,data=chub, main="Total Number of Melanophores in relation to Total Length for M. hyostoma",
+   xlab="Total Length", ylab="Total Number of Melanophores")
+#Nicely demonstrates that has a fish gets longer (which they will as they age), then they will have more spots-supports DNA expression
+levels(chub$Substrate_Type) <- c("Sand", "Medium Gravel", "Medium-Large Gravel")
+library(ggplot2)
+ggplot(data = chub, aes(x = TL, y = logTMelan, color=Age_Class)) +geom_point() + ggtitle("Total Number of Melanophores in Relation to Total Length")+theme(plot.title = element_text(lineheight=.12, face="bold"))+ labs(x = "Total Length (mm)") + labs(y = "Total Number of Melanophores") + scale_colour_manual(values=c("black","red"))
+
+
+
+ggplot(data = chub, aes(x = TL, y = Substrate_Type, color=Age_Class)) +geom_point() + ggtitle("Total length in relation to substrate type")+theme(plot.title = element_text(lineheight=.12, face="bold"))+ labs(x = "Total Length (mm)") + labs(y = "Substrate Type")+ scale_colour_manual(values=c("black","red"))
+
+ggplot(data = SChub_CPUE$Shoal, aes(x = Site, y = CPUE)) +geom_point() 
+
+
+geom_density2d()
+```
+
+
+
+```{r modelSet, echo=FALSE}
+library(lme4)
+chub.spot <- lmer(logTMelan ~ TL + Age_Class+ Sex+ Turbidity+ Current.Velocity..meters.second.+ Water_Depth+ Substrate_Type+ (1 | Collection.Location), chubmodel) # I can use normal linear models! (Based on o variance in collection location in summary)
+
+summary(chub.spot)
+
+cc=complete.cases(chubmodel)
+chub.global <- lm(logTMelan ~ STL:Age_Class+ Sex+ Turbidity+ Current.Velocity..meters.second.+ Water_Depth+ Substrate_Type+System.Type, data=chubmodel[cc,])
+
+plot(chub.global) #Looks ok
+
+#Plot residuals (week 8)
+
+
+models.chub = list(logTMelan~1,
+              logTMelan~STL,
+              logTMelan~Age_Class,
+              logTMelan~Sex,
+              logTMelan~Turbidity,
+              logTMelan~STL+Age_Class,
+              logTMelan~Current.Velocity..meters.second.,
+              logTMelan~Water_Depth,
+              logTMelan~Substrate_Type,
+              logTMelan~System.Type,
+              logTMelan~STL*Age_Class,
+              logTMelan~STL*Age_Class+Sex+System.Type,
+              logTMelan~STL*Age_Class+System.Type,
+              logTMelan~STL+Age_Class+System.Type,
+              logTMelan~STL*Age_Class+Sex+System.Type,
+              logTMelan~STL+Age_Class+Sex,
+              logTMelan~STL+Age_Class+Sex+Turbidity,
+              logTMelan~STL+Age_Class+Sex+Turbidity+Current.Velocity..meters.second.,
+              logTMelan~STL+Age_Class+Sex+Turbidity+Current.Velocity..meters.second.+Substrate_Type,
+              logTMelan~STL*Age_Class+Sex+Turbidity+Current.Velocity..meters.second.+Water_Depth+Substrate_Type,
+              logTMelan~STL*Age_Class+Sex+Turbidity+Current.Velocity..meters.second.+Water_Depth+Substrate_Type+System.Type
+)
+Y=(chubmodel$logTMelan)
+library(mgcv)
+fits.chub = lapply(models.chub, lm, data=chubmodel[cc,])
+
+library(AICcmodavg)
+aicc<-sapply(fits.chub, AICc)
+
+deltas=aicc-min(aicc)
+weights<-exp(-deltas/2)
+weights<-weights/sum(weights)
+ll=lapply(fits.chub,logLik)
+k=sapply(ll,attr,"df")
+aicc.table=data.frame(modname=as.character(models.chub),AICc=aicc,k=k,deltas=deltas,weights=weights)
+oo<-order(aicc.table$AICc)
+aicc.table[oo,]
+knitr::kable(aicc.table[oo,],format="pandoc",digits=2,
+             caption="Table 1: AIC~c~ model selection results.",
+             row.names=FALSE)
+
+# the row.name of the first row of aic is the index into the top model
+top.model = as.numeric(row.names(aicc.table)[1])
+ss <- summary(fits.chub[[top.model]])$coefficients
+
+ # extract coefficients table of best model
+#Best model changed: now best model logTMelan~TL + Age_Class
+```
+
+```{r assumptions2, echo=FALSE, include=FALSE, warning=FALSE}
+# in general, each code chunk should produce one piece of output. 
+# This chunk produces a plot of the residuals of the global model
+cc=complete.cases(chubmodel)
+chub.global <- lm(logTMelan ~ STL + Age_Class+ Sex+ Turbidity+ Current.Velocity..meters.second.+ Water_Depth+ Substrate_Type+System.Type, data=chubmodel[cc,])
+plot(chub.spot)
+
+
+```
+
+```{r assumptions3, echo=FALSE, include=FALSE}
+# This plot checks for non-linearities.
+old.par = par(mfrow=c(3,2),mar=c(5,4,0,0))
+cc=complete.cases(chubmodel)
+plot(resid(chub.global)~chubmodel[cc,"STL"])
+plot(resid(chub.global)~chubmodel[cc,"Age_Class"])
+plot(resid(chub.global)~chubmodel[cc,"Sex"]) 
+plot(resid(chub.global)~chubmodel[cc,"Current.Velocity..meters.second."])
+plot(resid(chub.global)~chubmodel[cc,"Water_Depth"])
+plot(resid(chub.global)~chubmodel[cc,"Substrate_Type"])
+plot(resid(chub.global)~chubmodel[cc,"Turbidity"])
+plot(resid(chub.global)~chubmodel[cc,"System.Type"])
+#All look pretty good
+
+```
+```{r topmodelPlot1,echo=FALSE,fig.cap='Figure 1: Observed and predicted Total Melanophores as a function of Total Length and Age'}
+#Plots all data against total lengths
+TotalMelanophores.lm<-lm(logTMelan~STL*Age_Class, data=chubmodel[cc,])
+summary(TotalMelanophores.lm)
+plot(Total_Melanophores~TL, data=chubmodel, xlab="Total Length", ylab="Total Melanophores", pch=unclass(chubmodel[,"Age_Class"]))
+
+#After adding System.Type
+TotalMelanophores2.lm<-lm(logTMelan~STL+Age_Class+System.Type, data=chubmodel[cc,])
+summary(TotalMelanophores.lm)
+plot(Total_Melanophores~TL, data=chubmodel, xlab="Total Length", ylab="Total Melanophores", pch=unclass(chubmodel[,"Age_Class"]))
+
+# Now make the TL that matches this STL
+ndfy1 = inner_join(ndfy1,scaling) %>%  # use inner_join to pull in just the age 1 individuals
+            mutate(TL=STL*sd.TL + mean.TL,
+                pTMelan=exp(predict(TotalMelanophores.lm,newdata =ndfy1)))
+with(ndfy1,lines(TL,pTMelan))
+
+ndfy2=data.frame(STL=seq(-2,2,0.1),Age_Class=2) #gives you a line for year 2 individuals
+
+# Now make the TL that matches this STL
+ndfy2 = inner_join(ndfy2,scaling) %>% 
+             mutate(TL=STL*sd.TL + mean.TL,         
+                          pTMelan=exp(predict(TotalMelanophores.lm,newdata =ndfy2)))
+
+with(ndfy2,lines(TL,pTMelan, col="red"))
+
+loc <-legend("topleft", legend = c("Age Class One","Age Class Two"),lwd = 3, col = c("Black","Red"), bty ="n", xjust = 0.5, inset = 0.01)
+
+
+```
+
+In the exploratory phase of the analysis I constructed a linear mixed-effects model with collection location as a random variable. Based on the overall variance in the collection location in the summary of this model, chub.spot <- lmer(logTMelan ~ TL + Age_Class+ Sex+ Turbidity+ Current.Velocity..meters.second.+ Water_Depth+ Substrate_Type+ (1 | Collection.Location), chubmodel), I determined I could use a linear model to explore the effects of size and the number of total melanophores, and environmental variables such as turbidity, water velocity 
+
+
+In the confirmatory phase of analysis I constructed a set of 14 models exploring the effects of total length, sex, age class, turbidity, current velocity, water temperature and water depth with the total number of melanophores that were present. My model set included a global model with all covariates. I used AICc and calculated Akaike weights to compare models. The best model had total length and age class as covariates.
+
+
+
+
+
+All analyses were carried out in R version 3.1.3 (R Core Team 2015). Non-linear models were run using package mgcv (Wood 2011).
+
+# Results
+
+Plotting a prediction function for age classes verse total length revealedthat  age class and total length additively affect the total number of melanophores that are present. Gravid shoal chubs, those which are going to lay eggs, where found primarily in tributaries, this may help prevent predation for younger fish who don't have the number of melanophores for effectively camouflage. This may suggest future management strategies include tributaries to maximize recruitment potential.  
+
+ 
+

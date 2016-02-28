@@ -18,3 +18,18 @@ df$id <- as.character(df$id)
 is.factor(df$id)
 
 df$id <- factor(df$id)
+
+# read in gapminder
+gapminder <- read.table("data/gapminder-FiveYearData.csv",
+                        header = TRUE,
+                        sep = ",")
+
+gapminder <- read.csv("data/gapminder-FiveYearData.csv",
+                      stringsAsFactors = FALSE)
+
+typeof(gapminder)
+class(gapminder)
+typeof(gapminder$country)
+class(gapminder$country)
+
+gapminder[gapminder$country=="Australia",]
