@@ -24,11 +24,14 @@ ggplot(gapminder,
   scale_y_log10() + 
   geom_smooth(method="lm", size = 2, color = "black", se = FALSE)
 
+
+png("graphs/gdp_vs_life.png")
 ggplot(gapminder, 
        aes(x = lifeExp, y = gdpPercap)) +
   geom_point(aes(color = continent)) +
   scale_y_log10() + 
   geom_smooth()
+dev.off()
 
 ggplot(gapminder,
        aes(x = year, y = lifeExp)) + 
@@ -49,6 +52,8 @@ ggplot(gapminder,
   scale_colour_discrete(name="Continent") +
   theme(axis.text.x = element_blank(), 
         axis.ticks.x = element_blank())
+
+
 ggsave("graphs/lifebyyearbycountry.png")
 # this version directly from web page
 ggplot(data = gapminder, aes(x = year, y = lifeExp, color=continent)) +
