@@ -1,4 +1,5 @@
 # demonstrate dplyr
+library(dplyr)
 gapminder <- read.csv("data/gapminder-FiveYearData.csv")
 
 gapminder[,"pop"] * gapminder[,"gdpPercap"]
@@ -16,6 +17,10 @@ Auspop <- gapminder %>%
   mutate(GDP = pop * gdpPercap,
          loggdpPercap = log10(gdpPercap))
 
+temp1 <- filter(gapminder, country=="Australia")
+temp2 <- select(temp1,pop,gdpPercap)
+Auspop <- mutate(temp2,...)
+
 grouped.df <- iris %>% 
   group_by(Species) %>% 
   summarise(mean_Petal.Length = mean(Petal.Length),
@@ -28,7 +33,14 @@ long.df <- gapminder %>%
   summarize(n_countries = n())
 
 library(tidyr)
-spread(long.df,continent,n_countries)
+wide.df <- spread(long.df,continent,n_countries)
+long2.df <- gather(wide.df, continent, n_countries, 2:6)
+head(long.df)
+dim(long.df)
+all.equal(long.df, long2.df[,c(2,1,3)])
+
+
+
 
 iris %>% 
   group_by(Species) %>% 
@@ -36,7 +48,17 @@ iris %>%
   
   spread(Species,Petal.Length)
   
-  
+irisLong <- iris  %>% gather(flower_att, measurement, -Species)
+irisLong %>% 
+  group_by(Species, flower_att) %>%
+  summarize(mean=mean(measurement),
+            sd=sd(measurement),
+            n=n()) %>%
+  spread(Species,mean)
+
+
+
+
 # make gap_wide
 # first make gap_long!
 gap_long <- gapminder %>% 

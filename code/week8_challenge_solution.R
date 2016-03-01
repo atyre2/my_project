@@ -5,8 +5,11 @@ library(dplyr)
 library(ggplot2)
 
 # read in the data
-neCountyTemps <- read.csv("data/NE_county_30yr_avg_temp.csv")
+neCountyTemps <- read.csv("data/NE_county_30yr_avg_temp.csv",colClasses=c("character",rep("numeric",12)))
+neCountyTemps <- read.table("data/NE_county_30yr_avg_temp.csv",sep=",",header=TRUE)
 
+# convert to numeric
+neCountyTemps[,2:13] <- lapply(neCountyTemps[,2:13],as.numeric)
 # make a long format version
 neCountyTempsLong <- gather(neCountyTemps,month,avgTemp,-County)
 # or (much faster!)
